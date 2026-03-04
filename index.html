@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axmzip — Axiom-Based Compression</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060810;
+    --surface: #0c1020;
+    --panel: #111827;
+    --border: #1e2d47;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── BINARY RAIN CANVAS ── */
+  #binary-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    opacity: 0.07;
+  }
+
+  .wrap { position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 4rem;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(6,8,16,0.85);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: var(--mono);
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: var(--bg) !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 700 !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    position: relative;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-title {
+    font-size: clamp(3.5rem, 10vw, 8rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+
+  .hero-title .axm { color: var(--accent); }
+  .hero-title .zip { color: var(--text); }
+
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    color: var(--muted);
+    max-width: 600px;
+    line-height: 1.8;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .hero-sub em {
+    color: var(--text);
+    font-style: normal;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .btn-primary:hover {
+    background: #00b8e0;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── EQUATION ANIMATION ── */
+  .axiom-display {
+    margin: 4rem auto;
+    max-width: 700px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    animation: fadeUp 0.7s ease 0.4s both;
+  }
+
+  .eq-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-left: 2px solid var(--border);
+    margin-bottom: 0.4rem;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.4s ease;
+    background: rgba(255,255,255,0.01);
+  }
+
+  .eq-step.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .eq-step.active {
+    border-left-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .eq-label {
+    color: var(--accent);
+    width: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .eq-arrow { color: var(--muted); }
+  .eq-val { color: var(--text); }
+  .eq-comment { color: var(--muted); margin-left: auto; font-size: 0.7rem; }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.5s ease;
+    transform-origin: left;
+  }
+  .stat:hover::before { transform: scaleX(1); }
+
+  .stat-num {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    font-family: var(--mono);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 4rem; max-width: 1200px; margin: 0 auto; }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .lead {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--muted);
+    max-width: 600px;
+    line-height: 1.9;
+    margin-bottom: 3rem;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .passes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .pass-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .pass-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+  }
+
+  .pass-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(0,212,255,0.05), transparent 60%);
+    pointer-events: none;
+  }
+
+  .pass-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .pass-card h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .pass-card p {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── RESULTS TABLE ── */
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    margin-top: 2rem;
+  }
+
+  .results-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(30,45,71,0.5);
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .results-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 1s ease;
+  }
+
+  .bar-fill.neg { background: var(--border); }
+
+  .pct {
+    font-weight: 700;
+    min-width: 3.5rem;
+    text-align: right;
+  }
+  .pct.good { color: var(--accent3); }
+  .pct.bad  { color: var(--muted); }
+
+  /* ── CODE BLOCK ── */
+  .code-section {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-top: 3rem;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f56; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #27c93f; }
+
+  .code-filename {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-left: 0.5rem;
+  }
+
+  pre {
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text);
+  }
+
+  .kw  { color: var(--accent2); }
+  .fn  { color: var(--accent); }
+  .str { color: var(--accent3); }
+  .cm  { color: var(--muted); }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-left: 3px solid var(--accent);
+    padding: 1.5rem 2rem;
+    background: rgba(0,212,255,0.04);
+    border-radius: 0 8px 8px 0;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: var(--text);
+    margin: 2rem 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.07; }
+    50%       { opacity: 0.12; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 4rem 1.5rem; }
+    .stats-strip { flex-wrap: wrap; }
+    .stat { min-width: 50%; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="binary-bg"></canvas>
+
+<div class="wrap">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">axm<span style="color:var(--text)">zip</span></div>
+  <ul class="nav-links">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#code">Code</a></li>
+    <li><a href="https://github.com/yourusername/axmzip" class="nav-cta">GitHub →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Open Source · MIT License · Python</div>
+  <h1 class="hero-title">
+    <span class="axm">axm</span><span class="zip">zip</span>
+  </h1>
+  <p class="hero-sub">
+    Compression that stores <em>rules</em>, not data.<br>
+    A binary stream becomes a hierarchy of axioms —<br>
+    each one generating the next from a tiny seed.
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/yourusername/axmzip" class="btn btn-primary">View on GitHub</a>
+    <a href="#how" class="btn btn-secondary">How It Works</a>
+  </div>
+
+  <div class="axiom-display" id="axmDisplay">
+    <div class="eq-step" id="a0">
+      <span class="eq-label">raw</span>
+      <span class="eq-arrow">→</span>
+      <span class="eq-val">10110101 10110101 10110101 10110101 ...</span>
+      <span class="eq-comment">8,000 bytes</span>
+    </div>
+    <div class="eq-step" id="a1">
+      <span class="eq-label">E1</span>
+      <span class="eq-arrow">=</span>
+      <span class="eq-val">[10110101]</span>
+      <span class="eq-comment">atomic pattern</span>
+    </div>
+    <div class="eq-step" id="a2">
+      <span class="eq-label">E2</span>
+      <span class="eq-arrow">=</span>
+      <span class="eq-val">[E1, E1]</span>
+      <span class="eq-comment">compound</span>
+    </div>
+    <div class="eq-step" id="a3">
+      <span class="eq-label">E3</span>
+      <span class="eq-arrow">=</span>
+      <span class="eq-val">[E2, E2]</span>
+      <span class="eq-comment">axiom of axioms</span>
+    </div>
+    <div class="eq-step" id="a4">
+      <span class="eq-label">E4</span>
+      <span class="eq-arrow">=</span>
+      <span class="eq-val">[E3, E3]</span>
+      <span class="eq-comment">deeper still</span>
+    </div>
+    <div class="eq-step active" id="a5">
+      <span class="eq-label">out</span>
+      <span class="eq-arrow">→</span>
+      <span class="eq-val" style="color:var(--accent)">[E4]</span>
+      <span class="eq-comment" style="color:var(--accent3)">142 bytes — 98.2% reduction</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat">
+    <span class="stat-num" data-target="98">0</span>
+    <span class="stat-label">% max reduction</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="8">0</span>
+    <span class="stat-label">test datasets</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="100">0</span>
+    <span class="stat-label">% lossless verified</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="0">0</span>
+    <span class="stat-label">dependencies</span>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-tag">// algorithm</div>
+  <h2>How the axioms<br>compound</h2>
+  <p class="lead">
+    Each pass discovers structure at a higher level of abstraction.
+    By the final pass, most data reduces to a handful of axiom IDs
+    and a small library that generates everything.
+  </p>
+
+  <div class="passes">
+    <div class="pass-card">
+      <span class="pass-num">// Pass 01</span>
+      <h3>Atomic Discovery</h3>
+      <p>Scan the binary stream at multiple window sizes. For each recurring pattern, calculate net savings — bytes saved minus library overhead. Register the top patterns as atomic axioms.</p>
+    </div>
+    <div class="pass-card">
+      <span class="pass-num">// Pass 02+</span>
+      <h3>Compound Discovery</h3>
+      <p>The stream is now a sequence of IDs. Find frequently co-occurring adjacent pairs. Each useful pair becomes a compound axiom referencing two existing ones. Sequence halves each pass.</p>
+    </div>
+    <div class="pass-card">
+      <span class="pass-num">// Final</span>
+      <h3>Pruning & Serialization</h3>
+      <p>Unused library entries are discarded. IDs remapped 0..N. In the best case, 193 candidates collapse to 7. Output: binary blob with varint IDs and compact axiom library.</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:3rem">
+    This mirrors how biological memory works. You don't store every frame of a memory — you store the <em style="color:var(--accent);font-style:normal">generating rules</em>, and reconstruct on demand. Axmzip does the same thing with bits.
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results" style="background:var(--surface);max-width:100%;padding:6rem 4rem">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-tag">// benchmarks</div>
+    <h2>Test results</h2>
+    <p class="lead">Tested across 8 datasets from maximally compressible to theoretically incompressible. All decompressions verified byte-perfect.</p>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Dataset</th>
+          <th>Original</th>
+          <th>Compressed</th>
+          <th>Reduction</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+
+    <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:1rem">
+      * Random data correctly fails — Shannon's theorem guarantees random data cannot be compressed. Axmzip does not make false claims.
+    </p>
+  </div>
+</section>
+
+<!-- CODE -->
+<section id="code">
+  <div class="section-tag">// usage</div>
+  <h2>Three lines<br>to compress anything</h2>
+  <p class="lead">Pure Python. Zero dependencies. MIT licensed.</p>
+
+  <div class="code-section">
+    <div class="code-header">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="code-filename">example.py</span>
+    </div>
+    <pre><span class="kw">from</span> axmzip <span class="kw">import</span> <span class="fn">Axmzip</span>
+
+<span class="cm"># Compress any bytes</span>
+ez   = <span class="fn">Axmzip</span>()
+blob, stats = ez.<span class="fn">compress</span>(data)
+
+<span class="cm"># stats: {'original_bytes': 18000, 'compressed_bytes': 1062,</span>
+<span class="cm">#         'ratio_pct': 94.1, 'lib_entries': 60, 'seq_len': 49}</span>
+
+<span class="cm"># Decompress — always lossless, MD5 verified</span>
+recovered = ez.<span class="fn">decompress</span>(blob)
+<span class="kw">assert</span> recovered == data  <span class="cm"># guaranteed</span></pre>
+  </div>
+
+  <div style="margin-top:3rem;display:flex;gap:1rem;flex-wrap:wrap">
+    <a href="https://github.com/yourusername/axmzip" class="btn btn-primary">Clone on GitHub</a>
+    <a href="#" class="btn btn-secondary">Read the Paper →</a>
+    <a href="#" class="btn btn-secondary">Hacker News Discussion →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>Axmzip — MIT License — <a href="https://github.com/yourusername/axmzip" style="color:var(--accent);text-decoration:none">github.com/yourusername/axmzip</a></div>
+  <div>Built on the idea that data has generating rules waiting to be found.</div>
+</footer>
+
+</div><!-- .wrap -->
+
+<script>
+// ── BINARY RAIN ─────────────────────────────────────────────
+const canvas = document.getElementById('binary-bg');
+const ctx    = canvas.getContext('2d');
+let cols, drops;
+
+function initCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  cols  = Math.floor(canvas.width / 18);
+  drops = Array(cols).fill(0).map(() => Math.random() * -canvas.height);
+}
+
+function drawBinary() {
+  ctx.fillStyle = 'rgba(6,8,16,0.12)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00d4ff';
+  ctx.font = '12px Space Mono, monospace';
+  drops.forEach((y, i) => {
+    const x = i * 18;
+    ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, y);
+    if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i] += 14;
+  });
+}
+
+initCanvas();
+window.addEventListener('resize', initCanvas);
+setInterval(drawBinary, 60);
+
+// ── EQUATION STEPS ANIMATION ───────────────────────────────
+const steps = document.querySelectorAll('.eq-step');
+steps.forEach((el, i) => {
+  setTimeout(() => {
+    el.classList.add('visible');
+  }, 800 + i * 350);
+});
+
+// ── COUNTER ANIMATION ──────────────────────────────────────
+function animateCounter(el, target, duration = 1200) {
+  const start = performance.now();
+  const update = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const el     = e.target.querySelector('[data-target]');
+      const target = parseInt(el.dataset.target);
+      animateCounter(el, target);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.stat').forEach(s => observer.observe(s));
+
+// ── RESULTS TABLE ──────────────────────────────────────────
+const results = [
+  { name: 'repetitive_binary', orig: '8,000 B', comp: '142 B',   pct: 98.2 },
+  { name: 'varied_repetitive', orig: '8,000 B', comp: '232 B',   pct: 97.1 },
+  { name: 'source_code',       orig: '18,000 B',comp: '1,062 B', pct: 94.1 },
+  { name: 'sparse_zeros',      orig: '8,000 B', comp: '1,354 B', pct: 83.1 },
+  { name: 'log_text',          orig: '20,100 B',comp: '4,198 B', pct: 79.1 },
+  { name: 'dna_sequence',      orig: '8,000 B', comp: '4,616 B', pct: 42.3 },
+  { name: 'sensor_packets',    orig: '4,800 B', comp: '5,689 B', pct: -18.5 },
+  { name: 'random_data *',     orig: '5,000 B', comp: '8,568 B', pct: -71.4 },
+];
+
+const tbody = document.getElementById('resultsBody');
+results.forEach(r => {
+  const isGood = r.pct > 0;
+  const barW   = isGood ? r.pct : 0;
+  tbody.innerHTML += `
+    <tr>
+      <td style="font-family:var(--mono);font-size:0.8rem">${r.name}</td>
+      <td style="color:var(--muted)">${r.orig}</td>
+      <td>${r.comp}</td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar-track">
+            <div class="bar-fill ${isGood?'':'neg'}" style="width:${barW}%"></div>
+          </div>
+          <span class="pct ${isGood?'good':'bad'}">${isGood?'+':''}${r.pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+});
+
+// Animate bars on scroll
+const tableObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('.bar-fill').forEach(b => {
+        const w = b.style.width;
+        b.style.width = '0';
+        setTimeout(() => { b.style.width = w; }, 100);
+      });
+      tableObserver.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+tableObserver.observe(tbody);
+</script>
+
+</body>
+</html>
