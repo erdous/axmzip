@@ -406,4 +406,4 @@ The path from here to a production compressor competitive with zstd is clear eng
 
 ---
 
-*MIT License — contributions welcome — [github.com/erdous/axmzip](https://github.com/erdous/axmzip)*
+*Apache License 2.0 — contributions welcome — [github.com/erdous/axmzip](https://github.com/erdous/axmzip)*

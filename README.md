@@ -1,8 +1,17 @@
 # Axmzip — Axiom-Based Binary Compression
 
+![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-research%20prototype-orange.svg)
+
 > *What if instead of storing data, you stored the rules that generate it?*
 
 Axmzip is a lossless compression algorithm that represents binary data as a **compounding library of axioms** — patterns that reference other patterns, building a hierarchical tree of rules that generates the original data from a tiny root.
+
+---
+
+→ **[Read the full technical paper](PAPER.md)** — theory, algorithm walkthrough, serialization format, complexity, and roadmap.
 
 ---
 
@@ -13,12 +22,12 @@ Traditional compressors find repeated patterns and replace them with shorter ref
 ```
 Raw binary:   10110101 10110101 10110101 10110101 ...
 
-Pass 1:  E1 = [10110101]              ← atomic axiom
-Pass 2:  E2 = [E1, E1]               ← compound axiom
-Pass 3:  E3 = [E2, E2]               ← axiom of axioms
-Pass 4:  E4 = [E3, E3]               ← deeper still
+Pass 1:  A1 = [10110101]              ← atomic axiom
+Pass 2:  A2 = [A1, A1]               ← compound axiom
+Pass 3:  A3 = [A2, A2]               ← axiom of axioms
+Pass 4:  A4 = [A3, A3]               ← deeper still
 ...
-Result:  [E6]                         ← entire file = one reference
+Result:  [A6]                         ← entire file = one reference
 ```
 
 This mirrors how the brain works: you don't remember every frame of a movie — you remember the *pattern* of what happened, and reconstruct the details on demand.
@@ -52,10 +61,10 @@ Scans the binary stream with a sliding window. For each recurring pattern, calcu
 The data stream is now a sequence of axiom IDs. Each pass scans for the most frequent **adjacent pairs** of IDs and replaces them with a new **compound axiom**. This continues until no further savings are possible.
 
 ### Pruning
-After all passes, unused library entries are removed. IDs are remapped to 0..N consecutively for minimal varint encoding. In the best case (repetitive binary), 193 candidate axioms pruned to 7.
+After all passes, unused library entries are removed. IDs are remapped to 0..N consecutively for minimal encoding. In the best case (repetitive binary), 193 candidate axioms pruned to just 7.
 
 ### Serialization
-Binary format using LEB128 variable-length integers throughout. Small libraries cost very little: a 7-entry library uses fewer than 100 bytes.
+Binary format using LEB128 variable-length integers throughout. Small libraries cost very little — a 7-entry library uses fewer than 100 bytes total.
 
 ---
 
@@ -76,25 +85,25 @@ python axmzip.py          # runs full test suite
 ```python
 from axmzip import Axmzip
 
-ez = Axmzip()
+az = Axmzip()
 
 # Compress
-blob, stats = ez.compress(data)   # data: bytes
+blob, stats = az.compress(data)   # data: bytes
 print(stats)
 # {'original_bytes': 18000, 'compressed_bytes': 1062, 'ratio_pct': 94.1, ...}
 
-# Decompress — always lossless
-recovered = ez.decompress(blob)
+# Decompress — always lossless, MD5 verified internally
+recovered = az.decompress(blob)
 assert recovered == data  # guaranteed
 ```
 
 ### Configuration
 
 ```python
-ez = Axmzip(
+az = Axmzip(
     min_len=2,        # minimum pattern length for atomic scan
     max_len=48,       # maximum pattern length for atomic scan
-    max_atomics=256,  # max atomic patterns to register per run
+    max_atomics=256,  # max atomic axioms to register per run
     max_passes=12,    # max compound passes before stopping
     verbose=True      # print per-pass progress
 )
@@ -105,7 +114,7 @@ ez = Axmzip(
 ## Compression Format
 
 ```
-[magic 4B "EQZ3"][version 1B][MD5 checksum 16B]
+[magic 4B "AXM1"][version 1B][MD5 checksum 16B]
 [lib_count varint][seq_count varint]
 [library entries...]
 [sequence of IDs...]
@@ -113,7 +122,7 @@ ez = Axmzip(
 
 Each library entry:
 ```
-[eq_id varint][type 1B: 0x01=atomic, 0x02=compound]
+[axiom_id varint][type 1B: 0x01=atomic, 0x02=compound]
   atomic:   [length varint][raw bytes]
   compound: [ref_count varint][ref_id varint ...]
 ```
@@ -128,7 +137,7 @@ Axmzip's compounding mechanism is related to:
 - **Sequitur** (Nevill-Manning, 1997) — builds a hierarchical grammar from recurrences
 - **Byte Pair Encoding (BPE)** — the tokenization algorithm behind modern LLMs, originally a compression technique
 
-Axmzip's distinguishing angle is the **explicit axiom library** with multi-pass hierarchical compounding, binary varint serialization, and the framing of compression as *finding generating rules* rather than finding repetitions.
+Axmzip's distinguishing angle is the **explicit axiom library** with multi-pass hierarchical compounding, savings-driven selection, binary varint serialization, and aggressive post-hoc pruning — plus the framing of compression as *finding generating rules* rather than finding repetitions.
 
 ---
 
@@ -138,9 +147,11 @@ Axmzip's distinguishing angle is the **explicit axiom library** with multi-pass 
 - Sequential/counter data (sensor packets) resists compression without delta pre-processing
 - No streaming support yet — processes full input in memory
 
+---
+
 ## Roadmap
 
-- [ ] Entropy detection: auto-fallback to raw passthrough for incompressible blocks
+- [ ] Entropy detection — auto-fallback to raw passthrough for incompressible blocks
 - [ ] Delta encoding pre-processing for time-series and counter data
 - [ ] Arithmetic coding on the final ID sequence for additional gains
 - [ ] Sliding-window atomic references (LZ77-style) to eliminate small-library overhead
@@ -150,10 +161,12 @@ Axmzip's distinguishing angle is the **explicit axiom library** with multi-pass 
 
 ## Contributing
 
-PRs welcome. The most impactful next steps are entropy detection and delta pre-processing — these would unlock competitive performance on sensor/telemetry data where the idea should shine.
+PRs welcome. The most impactful next steps are entropy detection and delta pre-processing — these would unlock competitive performance on sensor/telemetry data where the idea should shine most.
 
 ---
 
 ## License
 
-MIT — use freely, attribution appreciated.
+Licensed under the **Apache License 2.0** — see [LICENSE](LICENSE) for full terms.
+
+You are free to use, modify, and distribute this software, including commercially. Any contributor grants a patent license for their contributions, protecting users from patent claims related to this code.
