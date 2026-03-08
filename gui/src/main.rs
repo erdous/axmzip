@@ -543,7 +543,7 @@ impl eframe::App for AxmzipApp {
 
             // ── Footer ────────────────────────────────────
             ui.vertical_centered(|ui| {
-                ui.label(RichText::new("Axmzip v0.5 · Apache 2.0 · github.com/yourusername/axmzip")
+                ui.label(RichText::new("Axmzip v0.5 · Apache 2.0 · github.com/erdous/axmzip")
                     .color(TEXT_DIM).font(FontId::proportional(10.0)));
             });
         });
