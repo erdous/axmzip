@@ -1,0 +1,14 @@
+[package]
+name    = "axmzip"
+version = "0.5.0"
+edition = "2021"
+authors = ["Axmzip Contributors"]
+description = "Axmzip command-line tool"
+license = "Apache-2.0"
+
+[[bin]]
+name = "axmzip"
+path = "src/main.rs"
+
+[dependencies]
+axmzip-core = { path = "../core" }

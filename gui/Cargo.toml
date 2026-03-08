@@ -1,0 +1,23 @@
+[package]
+name    = "axmzip-gui"
+version = "0.5.0"
+edition = "2021"
+authors = ["Axmzip Contributors"]
+description = "Axmzip GUI — drag-and-drop compression"
+license = "Apache-2.0"
+
+[[bin]]
+name = "axmzip-gui"
+path = "src/main.rs"
+
+[dependencies]
+axmzip-core = { path = "../core" }
+eframe      = { version = "0.27", default-features = false, features = ["default_fonts", "glow"] }
+egui        = "0.27"
+open = "5.3.3"
+rfd         = "0.14"           # native file dialogs (open/save)
+
+[profile.release]
+opt-level = 3
+lto       = true
+strip     = true
